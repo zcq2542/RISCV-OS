@@ -98,18 +98,6 @@ int soft_tlb_switch(int pid) {
 }
 
 void pmp_init() {
-    /* Student's code goes here (PMP memory protection). */
-
-    /* Setup PMP TOR region 0x00000000 - 0x20000000 as r/w/x */
-
-    /* Setup PMP NAPOT region 0x20400000 - 0x20800000 as r/-/x */
-
-    /* Setup PMP NAPOT region 0x20800000 - 0x20C00000 as r/-/- */
-
-    /* Setup PMP NAPOT region 0x80000000 - 0x80004000 as r/w/- */
-
-    /* Student's code ends here. */
-
 }
 
 /* defined in cpu_vm.c */

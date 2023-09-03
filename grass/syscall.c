@@ -44,9 +44,6 @@ sys_send/recv (syscall.c)
 /* Syscall first half running in user-space */
 static void sys_invoke() {
     struct syscall *sc = (struct syscall*)SYSCALL_ARG;
-    /* The standard way of system call is using the `ecall` instruction;
-     * Switching to ecall is given to students as an exercise */
-
     /* set machine-mode software interrupt:
      * MSIP bit of mip to 1 */
     *((int*)0x2000000) = 1;

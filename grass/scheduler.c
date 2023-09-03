@@ -32,14 +32,6 @@ void proc_yield() {
     earth->mmu_switch(curr_pid);
     earth->timer_reset();
 
-    /* Student's code goes here (switch privilege level). */
-
-    /* Modify mstatus.MPP to enter machine or user mode during mret
-     * depending on whether curr_pid is a grass server or a user app
-     */
-
-    /* Student's code ends here. */
-
     /* Call the entry point for newly created process */
     if (curr_status == PROC_READY) {
         proc_set_running(curr_pid);

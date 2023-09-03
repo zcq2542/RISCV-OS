@@ -45,14 +45,6 @@ void intr_entry(int id) {
 }
 
 void excp_entry(int id) {
-    /* Student's code goes here (handle memory exception). */
-
-    /* I is for system call, handle the system call and return */
-
-    /* Otherwise, kill the process if curr_pid is a user application */
-
-    /* Student's code ends here. */
-
     FATAL("excp_entry: kernel got exception %d", id);
 }
 
@@ -82,17 +74,9 @@ void ctx_entry() {
     asm("csrr %0, mepc" : "=r"(mepc));
     proc_set[proc_curr_idx].mepc = (void*) mepc;
 
-    /* Student's code goes here (page table translation). */
-    /* Save the interrupt stack */
-    /* Student's code ends here. */
-
     /* handle either interrupt or exception */
     int id = trap_cause & 0x3FF;
     (trap_cause & (1 << 31)) ? intr_entry(id) : excp_entry(id);
-
-    /* Student's code goes here (page table translation). */
-    /* Restore the interrupt stack */
-    /* Student's code ends here. */
 
     /* Switch back to the user application stack */
     mepc = (int)proc_set[proc_curr_idx].mepc;

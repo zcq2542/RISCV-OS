@@ -21,27 +21,21 @@ void ctx_switch(void** old_sp, void* new_sp);
 /** Multi-threading functions **/
 
 struct thread {
-    /* Student's code goes here. */
 };
 
 void thread_init(){
-    /* Student's code goes here */
 }
 
 void ctx_entry(void){
-    /* Student's code goes here. */
 }
 
 void thread_create(void (*f)(void *), void *arg, unsigned int stack_size){
-    /* Student's code goes here. */
 }
 
 void thread_yield(){
-    /* Student's code goes here. */
 }
 
 void thread_exit(){
-    /* Student's code goes here. */
 }
 
 /** Producer and consumer functions **/

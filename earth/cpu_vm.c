@@ -14,11 +14,6 @@ int soft_tlb_free(int pid);
  *
  * The code below creates an identity mapping using RISC-V Sv32;
  * Read section4.3 of RISC-V privileged spec manual (riscv-privileged-v1.10.pdf)
- *
- * mmu_map() and mmu_switch() using page tables is given to students
- * as a course project. After this project, every process should have
- * its own set of page tables. mmu_map() will modify entries in these
- * tables and mmu_switch() will modify satp (page table base register)
  */
 
 #define FLAG_VALID_RWX 0xF
@@ -42,50 +37,22 @@ m_uint32* walk(int pid, void* va, int alloc) {
 
 int page_table_map(int pid, void *va, void *pa) {
     if (pid >= MAX_ROOT_PAGE_TABLES) FATAL("page_table_map: pid too large");
-
-    /* Student's code goes here (page table translation). */
-
-    /* Remove the following line of code and, instead,
-     * (1) if the page table for pid does not exist, build the table;
-     * (2) if the page tables exists, update entries of the table
-     */
-
     soft_tlb_map(pid, va, pa);
-
-
-
-    /* Student's code ends here. */
 }
 
 int page_table_free(int pid) {
-    /* Remove the following line and, instead,
-     * (1) free all pages pointed by the page table root
-     *     by calling pfree()
-     * (2) set pid_to_pagetable_base[pid] to 0
-     */
     soft_tlb_free(pid);
 }
 
 
 void *page_table_translate(int pid, void *va) {
-    /* Student's code goes here (page table translation). */
-
-    /* Student's code ends here. */
 }
 
 int page_table_switch(int pid) {
     /* ensure all updates to page table are settled */
     asm("sfence.vma zero,zero");
 
-    /* Student's code goes here (page table translation). */
-
-    /* Remove the following line of code and, instead,
-     * modify the page table base register (satp) similar to
-     * the code in mmu_init(); Remember to use the pid argument
-     */
     soft_tlb_switch(pid);
-
-    /* Student's code ends here. */
 
     /* wait flushing TLB entries */
     asm("sfence.vma zero,zero");
