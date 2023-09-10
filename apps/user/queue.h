@@ -1,6 +1,13 @@
 #pragma once
 
+#include "egos.h"
 #include "malloc.h"
+
+/* Note:
+ * you should test your code thoroughly.
+ * It will be extremely difficult to debug your user-level threading,
+ * if there is a bug in your queue implementation.
+ */
 
 typedef struct node_t {
     struct node_t *next;
@@ -23,6 +30,10 @@ void queue_init(queue_t *q) {
 /* add the "item" to the tail of the queue "q".
  * note: you should wrap the "item" in a "node_t"*/
 void enqueue(queue_t *q, void *item) {
+    /* [lab2-ex3]
+     * TODO: your code here
+     */
+
 
 }
 
@@ -30,5 +41,10 @@ void enqueue(queue_t *q, void *item) {
  * note: you should free memory allocated by enqueue.
  */
 void *dequeue(queue_t *q) {
+    /* [lab2-ex3]
+     * TODO: your code here
+     */
 
+
+    return (void*)0;
 }
