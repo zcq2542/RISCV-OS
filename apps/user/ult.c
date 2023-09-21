@@ -13,6 +13,17 @@
 
 #include "app.h"
 #include "queue.h"
+#include <stdint.h>
+// global variable hold the next thread_id;
+static uint32_t next_id = 0;
+static queue_t* thread_queue;
+static queue_t* terminated_threads;
+static struct thread* current_thread;
+
+// get the thread id;
+uint32_t get_thread_id() {
+    return next_id++;
+}
 
 /** These two functions are defined in grass/context.S **/
 void ctx_start(void** old_sp, void* new_sp);
@@ -23,11 +34,23 @@ void thread_create();
 void thread_yield();
 void thread_exit();
 
+enum thread_status{
+    NEW,
+    RUNNING,
+    WAITING,
+    TERMINATED
+};
 
 struct thread {
     /* [lab2-ex1]
      * TODO: your code here
      */
+    uint32_t id;
+    enum thread_status status; // thread's status.
+    void (*thread_func)(void*); // pointer to thread's main function.
+    void* func_args; // pointer of thread's main function's args
+    void* sp; // top of thread's stack
+    void* stack_bot; // bot of stack use to free;
 
 };
 
@@ -36,9 +59,25 @@ void thread_init(){
     /* [lab2-ex4]
      * TODO: your code here
      */
+    thread_queue = (queue_t*) malloc(sizeof(queue_t));
+    //printf("queue malloced\n");
+    queue_init(thread_queue);
+    terminated_threads = (queue_t*) malloc(sizeof(queue_t));
+    queue_init(terminated_threads);
+    //printf("queue inited\n");
+    current_thread = (struct thread*)malloc(sizeof(struct thread));
+    //printf("current_thread malloced\n");
+    current_thread->id = get_thread_id();
+    current_thread->status = RUNNING;
+    current_thread->thread_func = NULL;
+    current_thread->func_args = NULL;
+    current_thread->sp = NULL;
+    current_thread->stack_bot = NULL;
+    //printf("thread_init\n");
+    //enqueue(thread_queue, tmain);
 
-    INFO("thread_init is not implemented\n");
-    exit(0);
+    //INFO("thread_init is not implemented\n");
+    //exit(0);
 }
 
 
@@ -48,8 +87,24 @@ void thread_create(void (*f)(void *), void *arg, unsigned int stack_size) {
      * note: stack grows from HIGH to LOW in memory
      */
 
-    INFO("thread_create is not implemented\n");
-    exit(0);
+    //INFO("thread_create is not implemented\n");
+    //exit(0);
+    void* stack = (void*) malloc(stack_size);
+    struct thread* new_thread = (struct thread*)malloc(sizeof(struct thread));
+    new_thread->id = get_thread_id();
+    new_thread->status = NEW;
+    new_thread->thread_func = f;
+    new_thread->func_args = arg;
+    new_thread->sp = stack + stack_size;
+    new_thread->stack_bot = stack;
+    
+    current_thread->status = WAITING;
+    enqueue(thread_queue, current_thread); // push current_thread into runnable queue
+    void ** old_sp = &(current_thread->sp); // keep the address of current_thread's sp.
+    current_thread = new_thread; // update current_thread with new_thread. (using in ctx_entry())
+    printf("thread%d_create\n", current_thread->id);
+    printf("thread_queue: ");print_queue(thread_queue);
+    ctx_start(old_sp, new_thread->sp); // save the current contex, and start new _thread.
 }
 
 
@@ -59,8 +114,12 @@ void ctx_entry(void){
      * TODO: your code here
      */
 
-    INFO("ctx_entry is not implemented\n");
-    exit(0);
+    //INFO("ctx_entry is not implemented\n");
+    //exit(0);
+    //printf("ctx_entry\n");
+    current_thread->status = RUNNING;
+    current_thread->thread_func(current_thread->func_args);
+    thread_exit();
 }
 
 void thread_yield(){
@@ -68,18 +127,121 @@ void thread_yield(){
      * TODO: your code here
      */
 
-    INFO("thread_yield is not implemented\n");
-    exit(0);
+    // INFO("thread_yield is not implemented\n");
+    // exit(0);
+    if(empty(thread_queue)) return;
+    void ** old_sp = &(current_thread->sp); // keep the address of current_thread's sp.
+    enqueue(thread_queue, current_thread); // push current thread into queue.
+    current_thread->status = WAITING;
+    //printf("thread%d waiting\n", current_thread->id);
+    current_thread = dequeue(thread_queue); // update current_thread with new_thread. (using in ctx_entry())
+    current_thread->status = RUNNING;
+    //printf("thread%d running\n", current_thread->id);
+    //printf("thread_queue: ");print_queue(thread_queue);
+    ctx_switch(old_sp, current_thread->sp);
 }
 
 void thread_exit(){
     /* [lab2-ex5]
      * TODO: your code here
      */
+    // INFO("thread_exit is not implemented\n");
+    // exit(0);
+    
+    printf("thread%d start thread exit\n", current_thread->id);
+    while(current_thread->id == 0 && !empty(thread_queue)) { // if there are still runnable threads.
+        thread_yield();
+    }
+    while(!empty(terminated_threads)) {
+        printf("current->id: %d\n", current_thread->id);
+        //printf("get here\n");
+        //printf("terminated->head->item: %x\n", terminated_threads->head);
+        struct thread* terminated = dequeue(terminated_threads);
+        printf("terminated id%x\n", terminated->id);
+        print_queue(terminated_threads);
+        //printf("terminated thread: %x\n", terminated);
+        //printf("terminated threads empty: %d\n", empty(terminated_threads));
+        printf("terminated->id: %d\n", terminated->id);
+        if(terminated->stack_bot != NULL){
+            free(terminated->stack_bot);
+            printf("stack freed\n");
+        
+        }
+        free(terminated);
+        printf("TCB freed\n");
+    }
 
-    INFO("thread_exit is not implemented\n");
-    exit(0);
+    void ** old_sp = &(current_thread->sp);
+    //printf("old id: %d\n", current_thread->id);
+    enqueue(terminated_threads, current_thread);
+    printf("terminated_threads: ");print_queue(terminated_threads);
+    //printf("terminated threads empty: %d\n", empty(terminated_threads));
+    //printf("pushed to terminated queue\n");
+    current_thread->status = TERMINATED;
+    //printf("!empty(thread_queue): %d\n", !empty(thread_queue));
+    if(!empty(thread_queue)) {
+        current_thread = dequeue(thread_queue);
+        printf("current_thread->id: %d\n", current_thread->id);
+        ctx_switch(old_sp, current_thread->sp);
+        printf("ctx switched");    
+    }
+    else{
+        printf("terminated threads empty: %d\n", empty(terminated_threads));
+        print_queue(terminated_threads);
+        dequeue(terminated_threads);
+        if(current_thread->stack_bot) {
+            free(current_thread->stack_bot);
+            printf("stack freed\n");
+        }
+        free(current_thread);
+        printf("TCB freed\n");
+        free(terminated_threads);
+        printf("terminated_threads freed\n");
+        free(thread_queue);
+        printf("thread_queue freed\n");
+        //exit(0);
+    } 
+    //printf("terminated threads empty: %d\n", empty(terminated_threads));
+    //printf("!empty(terminated_threads): %d\n", !empty(terminated_threads));
+    
+    /*
+    current_thread->status = TERMINATED;
+
+    // Remove the next runnable thread from the queue
+    struct thread* next_thread = dequeue(thread_queue);
+
+    if (next_thread != NULL) {
+        // Switch to the next runnable thread
+        ctx_switch(&(current_thread->sp), next_thread->sp);
+        // After switching, current_thread is no longer the thread that called thread_exit.
+        // Instead, it's the thread we just switched to. So, we can safely clean up
+        // the terminated thread's resources.
+        printf("ctx_switched\n");
+        free(current_thread->sp); // Free the terminated thread's stack
+        free(current_thread);     // Free the terminated thread's control block
+
+        // Update the current_thread pointer
+        current_thread = next_thread;
+    } else {
+        // No other runnable threads, so we might as well exit the process.
+        exit(0);
+    }
+    */
 }
+
+/* print out queue
+ *
+ */
+
+void print_queue(queue_t *q) {
+    node_t* f = q->head;
+    while(f){
+        printf("%x -> ",((struct thread*)(f->item)) -> id);
+        f = f->next;
+    }
+    printf("NULL\n");
+}
+
 
 /* Main and test cases */
 void test_create();
@@ -90,14 +252,15 @@ void test_pingpong_yield();
 void test_producer_consumer();
 
 int main() {
-    INFO("User-level threading is not implemented.");
-    while(1);
+    // INFO("User-level threading is not implemented.");
+    // while(1);
 
     /* test cases for [lab2-ex4]
      * These tests touch thread_init, thread_create, and ctx_entry.
      * You should run one test at a time.
      */
-    // test_create();
+    printf("start test\n");
+    //test_create();
     // test_stack();
 
     /* test case for [lab2-ex5]
@@ -107,7 +270,7 @@ int main() {
     // test_exit();
     // test_single_yield();
     // test_pingpong_yield();
-    // test_producer_consumer();
+    test_producer_consumer();
 
     return 0;
 }
@@ -190,6 +353,7 @@ static void consumer(void *arg){
  *  "Hello with world"
  */
 void test_create() {
+    printf("start test_create\n");
     thread_init();
     thread_create(hello, "world", 1024);
     thread_exit();
