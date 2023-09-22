@@ -133,11 +133,11 @@ void thread_yield(){
     void ** old_sp = &(current_thread->sp); // keep the address of current_thread's sp.
     enqueue(thread_queue, current_thread); // push current thread into queue.
     current_thread->status = WAITING;
-    //printf("thread%d waiting\n", current_thread->id);
+    // printf("thread%d waiting\n", current_thread->id);
     current_thread = dequeue(thread_queue); // update current_thread with new_thread. (using in ctx_entry())
     current_thread->status = RUNNING;
-    //printf("thread%d running\n", current_thread->id);
-    //printf("thread_queue: ");print_queue(thread_queue);
+    // printf("thread%d running\n", current_thread->id);
+    // printf("thread_queue: ");print_queue(thread_queue);
     ctx_switch(old_sp, current_thread->sp);
 }
 
@@ -149,9 +149,9 @@ void thread_exit(){
     // exit(0);
     
     printf("thread%d start thread exit\n", current_thread->id);
-    while(current_thread->id == 0 && !empty(thread_queue)) { // if there are still runnable threads.
+    while(current_thread->id == 0 && !empty(thread_queue)) { // if there are still runnable threads ru others.
         thread_yield();
-    }
+    } // let thread 0 as last one to exit.
     while(!empty(terminated_threads)) {
         printf("current->id: %d\n", current_thread->id);
         //printf("get here\n");
