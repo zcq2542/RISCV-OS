@@ -102,8 +102,8 @@ void thread_create(void (*f)(void *), void *arg, unsigned int stack_size) {
     enqueue(thread_queue, current_thread); // push current_thread into runnable queue
     void ** old_sp = &(current_thread->sp); // keep the address of current_thread's sp.
     current_thread = new_thread; // update current_thread with new_thread. (using in ctx_entry())
-    printf("thread%d_create\n", current_thread->id);
-    printf("thread_queue: ");print_queue(thread_queue);
+    // printf("thread%d_create\n", current_thread->id);
+    // printf("thread_queue: ");print_queue(thread_queue);
     ctx_start(old_sp, new_thread->sp); // save the current contex, and start new _thread.
 }
 
@@ -148,85 +148,62 @@ void thread_exit(){
     // INFO("thread_exit is not implemented\n");
     // exit(0);
     
-    printf("thread%d start thread exit\n", current_thread->id);
+    // printf("thread%d start thread exit\n", current_thread->id);
     while(current_thread->id == 0 && !empty(thread_queue)) { // if there are still runnable threads ru others.
         thread_yield();
     } // let thread 0 as last one to exit.
     while(!empty(terminated_threads)) {
-        printf("current->id: %d\n", current_thread->id);
-        //printf("get here\n");
-        //printf("terminated->head->item: %x\n", terminated_threads->head);
+        // printf("current->id: %d\n", current_thread->id);
+        // printf("get here\n");
+        // printf("terminated->head->item: %x\n", terminated_threads->head);
         struct thread* terminated = dequeue(terminated_threads);
-        printf("terminated id%x\n", terminated->id);
-        print_queue(terminated_threads);
-        //printf("terminated thread: %x\n", terminated);
-        //printf("terminated threads empty: %d\n", empty(terminated_threads));
-        printf("terminated->id: %d\n", terminated->id);
+        // printf("terminated id%x\n", terminated->id);
+        // print_queue(terminated_threads);
+        // printf("terminated thread: %x\n", terminated);
+        // printf("terminated threads empty: %d\n", empty(terminated_threads));
+        // printf("terminated->id: %d\n", terminated->id);
         if(terminated->stack_bot != NULL){
             free(terminated->stack_bot);
-            printf("stack freed\n");
+            // printf("stack freed\n");
         
         }
         free(terminated);
-        printf("TCB freed\n");
+        // printf("TCB freed\n");
     }
 
     void ** old_sp = &(current_thread->sp);
     //printf("old id: %d\n", current_thread->id);
     enqueue(terminated_threads, current_thread);
-    printf("terminated_threads: ");print_queue(terminated_threads);
+    // printf("terminated_threads: ");print_queue(terminated_threads);
     //printf("terminated threads empty: %d\n", empty(terminated_threads));
     //printf("pushed to terminated queue\n");
     current_thread->status = TERMINATED;
     //printf("!empty(thread_queue): %d\n", !empty(thread_queue));
     if(!empty(thread_queue)) {
         current_thread = dequeue(thread_queue);
-        printf("current_thread->id: %d\n", current_thread->id);
+        // printf("current_thread->id: %d\n", current_thread->id);
         ctx_switch(old_sp, current_thread->sp);
-        printf("ctx switched");    
+        // printf("ctx switched");    
     }
     else{
-        printf("terminated threads empty: %d\n", empty(terminated_threads));
-        print_queue(terminated_threads);
+        // printf("terminated threads empty: %d\n", empty(terminated_threads));
+        // print_queue(terminated_threads);
         dequeue(terminated_threads);
         if(current_thread->stack_bot) {
             free(current_thread->stack_bot);
-            printf("stack freed\n");
+            // printf("stack freed\n");
         }
         free(current_thread);
-        printf("TCB freed\n");
+        // printf("TCB freed\n");
         free(terminated_threads);
-        printf("terminated_threads freed\n");
+        // printf("terminated_threads freed\n");
         free(thread_queue);
-        printf("thread_queue freed\n");
+        // printf("thread_queue freed\n");
         //exit(0);
     } 
     //printf("terminated threads empty: %d\n", empty(terminated_threads));
     //printf("!empty(terminated_threads): %d\n", !empty(terminated_threads));
     
-    /*
-    current_thread->status = TERMINATED;
-
-    // Remove the next runnable thread from the queue
-    struct thread* next_thread = dequeue(thread_queue);
-
-    if (next_thread != NULL) {
-        // Switch to the next runnable thread
-        ctx_switch(&(current_thread->sp), next_thread->sp);
-        // After switching, current_thread is no longer the thread that called thread_exit.
-        // Instead, it's the thread we just switched to. So, we can safely clean up
-        // the terminated thread's resources.
-        printf("ctx_switched\n");
-        free(current_thread->sp); // Free the terminated thread's stack
-        free(current_thread);     // Free the terminated thread's control block
-
-        // Update the current_thread pointer
-        current_thread = next_thread;
-    } else {
-        // No other runnable threads, so we might as well exit the process.
-        exit(0);
-    }
-    */
 }
 
 /* print out queue
