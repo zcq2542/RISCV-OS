@@ -7,7 +7,6 @@ RISCV_CC = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/
 OBJDUMP = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objdump
 OBJCOPY = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objcopy
 
-
 LIB_HEADERS = Makefile library/*.h library/*/*.h
 EARTH_SRCS = earth/earth.S earth/*.c library/elf/*.c library/libc/*.c
 EARTH_HEADERS = earth/earth.lds $(LIB_HEADERS)
