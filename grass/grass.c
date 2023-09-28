@@ -1,52 +1,56 @@
 /*
- * (C) 2022, Cornell University
- * All rights reserved.
- */
-
-/* Author: Yunhao Zhang
- * Description: grass layer initialization
- * Initialize timer and the process control block;
- * Spawn the first kernel process, GPID_PROCESS (pid=1).
- *
- * Updated by CS6640 23fall staff
+ * Description: a simple timer example
  */
 
 #include "egos.h"
-#include "process.h"
-#include "syscall.h"
-
-struct grass *grass = (void*)APPS_STACK_TOP;
 struct earth *earth = (void*)GRASS_STACK_TOP;
 
-static int sys_proc_read(int block_no, char* dst) {
-    return earth->disk_read(SYS_PROC_EXEC_START + block_no, 1, dst);
+#define CLINT0_MTIME     0x200bff8
+#define CLINT0_MTIMECMP  0x2004000
+
+long long mtime_get() {
+    int low  = *(int*)(CLINT0_MTIME);
+    int high = *(int*)(CLINT0_MTIME + 4);
+    return (((long long)high) << 32) | low;
 }
 
+void mtimecmp_set(long long time) {
+    *(int*)(CLINT0_MTIMECMP + 0) = (int)time;
+    *(int*)(CLINT0_MTIMECMP + 4) = (int)(time >> 32);
+}
+
+void handler() {
+    static long long last_time = 0;
+    CRITICAL("Got a timer interrupt!");
+
+    if (mtime_get() < last_time) {
+        printf("last time: 0x%llx, this time: 0x%llx\n",
+                last_time, mtime_get());
+        FATAL("timer overflow");
+    }
+    last_time = mtime_get();
+
+    // (4) reset timer
+    mtimecmp_set(mtime_get() + QUANTUM);
+}
+
+
 int main() {
-    CRITICAL("Enter the grass layer");
+    CRITICAL("This is a simple timer example");
 
-    /* register trap handler */
-    earth->trap_handler_register(trap_handler);
+    // (1) register handler() as interrupt handler
+    asm("csrw mtvec, %0" ::"r"(handler));
 
-    /* Initialize the grass interface functions */
-    grass->proc_alloc = proc_alloc;
-    grass->proc_free = proc_free;
-    grass->proc_set_ready = proc_set_ready;
+    // (2) Set a timer
+    mtimecmp_set(mtime_get() + QUANTUM);
 
-    grass->sys_exit = sys_exit;
-    grass->sys_send = sys_send;
-    grass->sys_recv = sys_recv;
+    // (3) enable timer interrupt
+    int mstatus, mie;
+    asm("csrr %0, mstatus" : "=r"(mstatus));
+    asm("csrw mstatus, %0" ::"r"(mstatus | 0x8));
+    asm("csrr %0, mie" : "=r"(mie));
+    asm("csrw mie, %0" ::"r"(mie | 0x80));
 
-    /* Load and enter the first kernel process sys_proc */
-    INFO("Load kernel process #%d: sys_proc", GPID_PROCESS);
-    elf_load(GPID_PROCESS, sys_proc_read, 0, 0);
 
-    /* run the first process sys_proc*/
-    earth->mmu_switch(GPID_PROCESS);
-    proc_set_running(proc_alloc());
-
-    /* jump to entry of the first process */
-    void (*sys_proc_entry)() = (void*)APPS_ENTRY;
-    asm("mv a0, %0" ::"r"(APPS_ARG));
-    sys_proc_entry();
+    while(1);
 }

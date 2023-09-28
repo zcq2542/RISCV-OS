@@ -58,16 +58,6 @@ int main() {
 
     /* Load and enter the grass layer */
     elf_load(0, grass_read, 0, 0);
-
-    /* Enable machine-mode interrupt before entering supervisor mode */
-    earth->intr_enable();
-
-    int mstatus;
-    /* Enter supervisor mode after mret */
-    asm("csrr %0, mstatus" : "=r"(mstatus));
-    asm("csrw mstatus, %0" ::"r"((mstatus & ~(3 << 11))   /* clear MPP */
-                                          | (1 << 11) )); /* set MPP to S */
-    /* Enter the grass layer after mret */
-    asm("csrw mepc, %0" ::"r"(GRASS_ENTRY));
-    asm("mret");
+    void (*grass_entry)() = (void*)GRASS_ENTRY;
+    grass_entry();
 }
