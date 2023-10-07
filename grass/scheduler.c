@@ -31,11 +31,18 @@
  *  - With these macros, one can get the attribute by, for example,
  *       proc_set[pid2idx(pid)].arrive_time = earth->gettime();
  */
-// #define arrive_time schd_attr.longlongs[0]
-// #define schded_count schd_attr.ints[15]
+#define arrive_time           schd_attr.longlongs[0]
+#define last_schded_time      schd_attr.longlongs[1]
+#define arrive_ofcounter      schd_attr.longlongs[2]
+#define last_schded_ofcounter schd_attr.longlongs[3]
+#define schded_count schd_attr.ints[15]
 
+#define turnaround_time schd_attr.float[1] // arrive time -> stop time
+#define response_time schd_attr.longlongs[2] // arrive time -> 1st scheduled time
+#define cpu_time schd_attr.longlongs[3] // 
 
 static int mlfq();
+static unsigned long long overflow_counrt = 0;
 
 /* schedule next process */
 void proc_yield() {
@@ -48,6 +55,15 @@ void proc_yield() {
      *   - you may want to calculate how long it runs here
      *     -- a challenge is that the returned time may overflow
      * */
+    unsigned long long current_time = earth->gettime();
+    unsigned long long last_time = proc_set[pid2idx(curr_pid)].last_schded_time;
+    if(current_time > last_time){
+        proc_set[pid2idx(curr_pid)].cpu_time += current_time - last_time;
+    }
+    else {
+        proc_set[pid2idx(curr_pid)].cpu_time += current_time + 0xffffffffffffffff - last_time + 1;
+    }
+
 
 
 
@@ -76,12 +92,19 @@ void proc_yield() {
     proc_curr_idx = next_idx;
     ASSERT(curr_pid > 0 && curr_pid < pid2idx(MAX_NPROCESS), \
             "proc_yield: invalid pid to switch");
-    earth->mmu_switch(curr_pid);
+earth->mmu_switch(curr_pid);
     earth->timer_reset();
 
     /* [lab3-ex1]
      * TODO: update "schd_attr" for the next process (new process)
      * */
+    proc_set[pid2idx(curr_pid)].last_schded_time = earth->gettime();
+    if(proc_set[pid2idx(curr_pid)].schded_count == 0){
+        proc_set[pid2idx(curr_pid)].response_time = proc_set[pid2idx(curr_pid)].last_schded_time- proc_set[pid2idx(curr_pid)].arrive_time; 
+    }
+    ++proc_set[pid2idx(curr_pid)].schded_count;
+    // proc_set[pid2idx(curr_pid)]._time
+
 
 
 
@@ -135,6 +158,7 @@ static int mlfq() {
 
 
 
+
     return 0;
 }
 
@@ -154,7 +178,12 @@ static float tar_time(int pid) {
  * - the returned value is a float number (how many QUANTUM)
  */
 static float resp_time(int pid) {
-  return 0;
+    printf("%llx\n", proc_set[pid2idx(curr_pid)].response_time);
+    printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time);
+    printf("QUANTUM: %x\n", QUANTUM);
+    printf("QUANTUM: %f\n", (float)QUANTUM);
+    printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time / QUANTUM);
+    return (float)((float)proc_set[pid2idx(curr_pid)].response_time / (float)QUANTUM);
 }
 
 /* [lab-ex1]
@@ -162,7 +191,7 @@ static float resp_time(int pid) {
  * - the returned value is an integer
  */
 static int yield_num(int pid) {
-  return 0;
+  return proc_set[pid2idx(curr_pid)].schded_count;
 }
 
 /* [lab-ex1]
@@ -182,7 +211,12 @@ void proc_on_arrive(int pid) {
      * TODO: collect pid's scheduling information
      * hint: remember to init/clear the pid's "schd_attr"
      */
+    memset(&(proc_set[pid2idx(curr_pid)].schd_attr), 0, sizeof(proc_set[pid2idx(curr_pid)].schd_attr));  // Set all bytes of schd_attr to zer
+    printf("arrive_time: %llu\n", proc_set[pid2idx(curr_pid)].arrive_time);
+    printf("schded_time: %d\n", proc_set[pid2idx(curr_pid)].schded_count);
+    printf("cpu_time: %llu\n", proc_set[pid2idx(curr_pid)].cpu_time);
 
+    proc_set[pid2idx(curr_pid)].arrive_time = earth->gettime();
 
 
 
@@ -191,7 +225,7 @@ void proc_on_arrive(int pid) {
   if (first_time) {
       mlfq_init();
       first_time = 0;
-      /* return without adding proc to queue for the first time
+      /* return without adding proc to queue or the first time
        * because this process is sys_proc, which will directly
        * run without go via proc_yield().*/
       return;
@@ -219,7 +253,7 @@ void proc_on_stop(int pid) {
 
 
 
-    INFO("proc %d died after %d yields, turnaround time: %.2f, response time: %.2f, cputime: %.2f",
+    INFO("proc %d died after %d yields, turnaround time: %.2f, response time: %.4f, cputime: %.2f",
             pid, yield_num(pid),
             tar_time(pid), resp_time(pid),
             cpu_runtime(pid));
