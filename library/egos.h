@@ -1,5 +1,5 @@
 #pragma once
-extern unsigned long long overflow_count;
+//extern unsigned long long overflow_count;
 
 struct earth {
     /* CPU interface */

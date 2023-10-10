@@ -58,7 +58,7 @@ void check_nested_trap() {
 
 static unsigned int trap_cause;
 void trap_handler(unsigned int mcause) {
-    // printf("trap handler\n");
+    printf("trap handler: curr_pid: %d\n Interrupt: %d Exception code: %d\n" , curr_pid, mcause & (1 << 31), mcause & 0x3FF);
     check_nested_trap();
 
     // save mcause for later use

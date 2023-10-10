@@ -2,6 +2,7 @@
 
 #include "egos.h"
 #include "malloc.h"
+//#include "stdio.h"
 
 /* Note:
  * you should test your code thoroughly.
@@ -34,6 +35,9 @@ void enqueue(queue_t *q, void *item) {
      * TODO: your code here
      */
     node_t *node = (node_t *) malloc(sizeof(node_t));
+    if(!node) {
+        printf("Fail to alloc mem in queue\n");
+    }
     node->item = item;
     node->next = NULL;
     if(q->head == (void *)0) {
@@ -86,7 +90,7 @@ int try_rm_item(queue_t *q, void *target) {
     /* TODO: your code here */
 
     if(q->head == (void*) 0) {
-        printf("q is empty\n");
+        // printf("q is empty\n");
         return 0;
     }
 
@@ -100,6 +104,7 @@ int try_rm_item(queue_t *q, void *target) {
     node_t* flag = q->head; // q size > 1
     while(flag->next != NULL){
         if(flag->next->item == target){
+            if(flag->next == q->tail) {q->tail = flag;};
             node_t* temp = flag->next;
             flag->next = temp->next;
             free(temp);
@@ -130,6 +135,7 @@ void rm_item(queue_t *q, void *target) {
     node_t* flag = q->head; // q size > 1
     while(flag->next != NULL){
         if(flag->next->item == target){
+            if(flag->next == q->tail) {q->tail = flag;};
             node_t* temp = flag->next;
             flag->next = temp->next;
             free(temp);
@@ -142,7 +148,7 @@ void rm_item(queue_t *q, void *target) {
 // print the queue with whatever information you think is useful
 void dump_queue(queue_t *q) {
     /* TODO: your code here */
-    if(q->head == (void*) 0) printf("q is empty\n");
+    // if(q->head == (void*) 0) printf("q is empty\n");
     node_t* flag = q->head;
     while(flag != NULL){
         printf("%x -> ", flag->item);

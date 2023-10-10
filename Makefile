@@ -18,8 +18,8 @@ APP_HEADERS = apps/app.lds apps/*.h $(LIB_HEADERS)
 USRAPP_HEADERS = $(wildcard apps/user/*.h)
 
 
-# CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections
-CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections -fno-common -ggdb -g
+CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections 
+# CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections -fno-common -ggdb -g
 LDFLAGS = -Wl,--gc-sections -nostartfiles -nostdlib
 INCLUDE = -Ilibrary -Ilibrary/elf -Ilibrary/libc -Ilibrary/file -Ilibrary/servers
 QEMU_FLAGS = -bios none -readconfig $(QEMU)/sifive-e31.cfg -kernel $(QEMU)/qemu.elf -nographic
@@ -68,7 +68,7 @@ $(RELEASE)/earth.elf: $(EARTH_SRCS) $(EARTH_HEADERS)
 $(RELEASE)/grass.elf: $(GRASS_SRCS) $(GRASS_HEADERS)
 	@mkdir -p $(DEBUG) $(RELEASE)
 	@echo "$(GREEN)-------- Compile the Grass Layer --------$(END)"
-	$(RISCV_CC) $(COMMON) $(GRASS_SRCS) $(GRASS_LD) -o $(RELEASE)/grass.elf
+	$(RISCV_CC) -os $(COMMON) $(GRASS_SRCS) $(GRASS_LD) -o $(RELEASE)/grass.elf
 	$(OBJDUMP) $(OBJDUMP_FLAGS) $(RELEASE)/grass.elf > $(DEBUG)/grass.lst
 
 appprint:
@@ -89,7 +89,7 @@ $(USRAPPELFS): $(RELEASE)/%.elf : $(USRAPP)/%.c $(APPS_SRCS) $(APP_HEADERS) $(US
 
 install:
 	@echo "$(YELLOW)-------- Create the Disk Image --------$(END)"
-	$(CC) $(TOOLS)/mkfs.c library/file/file.c -DMKFS $(INCLUDE) -o $(TOOLS)/mkfs
+	$(CC)  $(TOOLS)/mkfs.c library/file/file.c -DMKFS $(INCLUDE) -o $(TOOLS)/mkfs
 	cd $(TOOLS); ./mkfs
 
 qemu:
