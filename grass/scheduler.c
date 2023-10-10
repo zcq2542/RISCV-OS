@@ -33,16 +33,42 @@
  */
 #define arrive_time           schd_attr.longlongs[0]
 #define last_schded_time      schd_attr.longlongs[1]
-#define arrive_ofcounter      schd_attr.longlongs[2]
-#define last_schded_ofcounter schd_attr.longlongs[3]
-#define schded_count schd_attr.ints[15]
+#define arrive_ofcount        schd_attr.longlongs[2] // overflow count when arrive
+#define last_schded_ofcount   schd_attr.longlongs[3] // overflow count when last schded
+#define schded_count          schd_attr.ints[15]
 
-#define turnaround_time schd_attr.float[1] // arrive time -> stop time
-#define response_time schd_attr.longlongs[2] // arrive time -> 1st scheduled time
-#define cpu_time schd_attr.longlongs[3] // 
+#define turnaround_time       schd_attr.floats[8] // arrive time -> stop time
+#define response_time         schd_attr.floats[9] // arrive time -> 1st scheduled time
+#define cpu_time              schd_attr.floats[10] // 
 
 static int mlfq();
-static unsigned long long overflow_counrt = 0;
+static queue_t hq;
+static queue_t mq;
+static queue_t lq;
+/*
+static float time_gap(unsigned long long current_time, unsigned long long last_time, unsigned long long cur_ovflow_count, unsigned long long last_ovflow_count){
+    unsigned long long overflow_times = cur_ovflow_count - last_ovflow_count;
+    if(cur_ovflow_count < last_ovflow_count){
+        FATAL("overflow_count overflowi\n");
+    }
+    if(current_time <= last_time){ // must overflow
+        return (float)(((unsigned long long)0xffffffffffffffff - last_time + current_time )/QUANTUM) + (0xffffffffffffffff) / QUANTUM * (overflow_times-1);
+    }
+    else{
+        return (float)(current_time - last_time) / QUANTUM + (0xffffffffffffffff) / QUANTUM * (overflow_times);
+    }
+
+}
+*/
+static float time_gap(unsigned long long current_time, unsigned long long last_time) {
+    if(current_time <= last_time){ // must overflow
+        return (float)(((unsigned long long)0xffffffffffffffff - last_time + current_time )/QUANTUM);
+    }
+    else{
+        return (float)(current_time - last_time) / QUANTUM;
+    }
+
+}
 
 /* schedule next process */
 void proc_yield() {
@@ -55,19 +81,17 @@ void proc_yield() {
      *   - you may want to calculate how long it runs here
      *     -- a challenge is that the returned time may overflow
      * */
+    // printf(" unsigned long long overflow_count = %llx\n", earth->overflow_count);
     unsigned long long current_time = earth->gettime();
     unsigned long long last_time = proc_set[pid2idx(curr_pid)].last_schded_time;
-    if(current_time > last_time){
-        proc_set[pid2idx(curr_pid)].cpu_time += current_time - last_time;
-    }
-    else {
-        proc_set[pid2idx(curr_pid)].cpu_time += current_time + 0xffffffffffffffff - last_time + 1;
-    }
+    unsigned long long cur_ovflow_count = earth->overflow_count;
+    unsigned long long last_ovflow_count = proc_set[pid2idx(curr_pid)].last_schded_ofcount;
 
+    proc_set[pid2idx(curr_pid)].cpu_time += time_gap(current_time, last_time, cur_ovflow_count, last_ovflow_count); 
 
-
-
-
+    // printf("%f\n", (float)(current_time - last_time) / QUANTUM);
+    // printf("pid: %d , %f\n", curr_pid, proc_set[pid2idx(curr_pid)].cpu_time);
+    // proc_set_runnable(curr_pid); //cause error.
     /* Find the next runnable process */
     int next_idx = -1;
 
@@ -82,6 +106,7 @@ void proc_yield() {
     }
 #else
     int next_pid = mlfq();
+    // printf("next_pid: %d\n", next_pid);
     next_idx = (next_pid > 0) ? pid2idx(next_pid) : -1;
 #endif
 
@@ -92,18 +117,24 @@ void proc_yield() {
     proc_curr_idx = next_idx;
     ASSERT(curr_pid > 0 && curr_pid < pid2idx(MAX_NPROCESS), \
             "proc_yield: invalid pid to switch");
-earth->mmu_switch(curr_pid);
+    earth->mmu_switch(curr_pid);
     earth->timer_reset();
 
     /* [lab3-ex1]
      * TODO: update "schd_attr" for the next process (new process)
      * */
-    proc_set[pid2idx(curr_pid)].last_schded_time = earth->gettime();
+    current_time = earth->gettime();
+    cur_ovflow_count = earth->overflow_count;
+    last_time = proc_set[pid2idx(curr_pid)].arrive_time;
+    last_ovflow_count = proc_set[pid2idx(curr_pid)].arrive_ofcount;
+
+    
+    proc_set[pid2idx(curr_pid)].last_schded_time = current_time;
+    proc_set[pid2idx(curr_pid)].last_schded_ofcount = cur_ovflow_count;
     if(proc_set[pid2idx(curr_pid)].schded_count == 0){
-        proc_set[pid2idx(curr_pid)].response_time = proc_set[pid2idx(curr_pid)].last_schded_time- proc_set[pid2idx(curr_pid)].arrive_time; 
+        proc_set[pid2idx(curr_pid)].response_time = time_gap(current_time, last_time, cur_ovflow_count, last_ovflow_count); 
     }
     ++proc_set[pid2idx(curr_pid)].schded_count;
-    // proc_set[pid2idx(curr_pid)]._time
 
 
 
@@ -127,11 +158,37 @@ earth->mmu_switch(curr_pid);
  * initialize MLFQ data structures */
 void mlfq_init() {
     /* TODO: your code here*/
+    
+    // FATAL("mlfq_init not implemented");
+    //hq = (queue_t*) malloc (sizeof(queue_t));
+    queue_init(&hq);
 
-    FATAL("mlfq_init not implemented");
+    //mq = (queue_t*) malloc (sizeof(queue_t));
+    queue_init(&mq);
+    
+    //lq = (queue_t*) malloc (sizeof(queue_t));
+    queue_init(&lq);
+     
+    for(int pid = 1; pid < USER_PID_START; ++pid){
+        enqueue(&hq, (void*)pid);
+    }
+    
+    printf("mlfq\n");
+}
 
-
-
+static int aval_pid(queue_t* q){
+    int next_pid = -1;
+    node_t* flag = hq.head;
+    while(flag != NULL){
+        int s = proc_set[pid2idx((int)(flag->item))].status; 
+        if(s == PROC_READY || s == PROC_RUNNING || s == PROC_RUNNABLE){
+            next_pid = (int)(flag->item);
+            break;
+        }
+        flag = flag->next;
+    }
+    rm_item(q, (void*)next_pid);
+    return next_pid;
 }
 
 /* [lab3-ex2]
@@ -152,13 +209,36 @@ void mlfq_init() {
  *     -- there are no duplicated pids between queues
  *   - use pid2idx() and idx2pid() to translate pid and index in "proc_set"
  * */
+
 static int mlfq() {
     /* TODO: your code here */
+    printf("mlfq()\n");
+    /* 
+    try_rm_item(hq, (void*)curr_pid);
+    try_rm_item(mq, (void*)curr_pid);
+    try_rm_item(hq, (void*)curr_pid);
 
+    if(curr_pid < USER_PID_START && proc_set[pid2idx(curr_pid)].status != PROC_UNUSED) {
+        enqueue(hq, (void*)curr_pid);
+    }
+    else if(proc_set[pid2idx(curr_pid)].cpu_time < 1 && proc_set[pid2idx(curr_pid)].status != PROC_UNUSED){
+        enqueue(hq, (void*)curr_pid);
+    }
+    else if(proc_set[pid2idx(curr_pid)].cpu_time >= 1 && proc_set[pid2idx(curr_pid)].cpu_time < 2 && proc_set[pid2idx(curr_pid)].status != PROC_UNUSED){
+        enqueue(mq, (void*)curr_pid);
+    }
+    else if(proc_set[pid2idx(curr_pid)].cpu_time >= 2 && proc_set[pid2idx(curr_pid)].status != PROC_UNUSED){
+        enqueue(lq, (void*)curr_pid);
+    }
 
+    int next_pid = aval_pid(hq);
+    if(next_pid > 0) return next_pid;
+    next_pid = aval_pid(mq);
+    if(next_pid > 0) return next_pid;
+    next_pid = aval_pid(lq);
 
-
-
+    return next_pid>0 ? next_pid : 0;
+ */  
     return 0;
 }
 
@@ -170,7 +250,7 @@ static int mlfq() {
  * - the returned value is a float number (how many QUANTUM)
  */
 static float tar_time(int pid) {
-    return 0;
+    return proc_set[pid2idx(pid)].turnaround_time;
 }
 
 /* [lab-ex1]
@@ -178,12 +258,12 @@ static float tar_time(int pid) {
  * - the returned value is a float number (how many QUANTUM)
  */
 static float resp_time(int pid) {
-    printf("%llx\n", proc_set[pid2idx(curr_pid)].response_time);
-    printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time);
-    printf("QUANTUM: %x\n", QUANTUM);
-    printf("QUANTUM: %f\n", (float)QUANTUM);
-    printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time / QUANTUM);
-    return (float)((float)proc_set[pid2idx(curr_pid)].response_time / (float)QUANTUM);
+    //printf("%llx\n", proc_set[pid2idx(curr_pid)].response_time);
+    //printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time);
+    //printf("QUANTUM: %x\n", QUANTUM);
+    //printf("QUANTUM: %f\n", (float)QUANTUM);
+    //printf("%f\n", (float)proc_set[pid2idx(curr_pid)].response_time / QUANTUM);
+    return proc_set[pid2idx(pid)].response_time;
 }
 
 /* [lab-ex1]
@@ -191,7 +271,7 @@ static float resp_time(int pid) {
  * - the returned value is an integer
  */
 static int yield_num(int pid) {
-  return proc_set[pid2idx(curr_pid)].schded_count;
+  return proc_set[pid2idx(pid)].schded_count;
 }
 
 /* [lab-ex1]
@@ -199,7 +279,7 @@ static int yield_num(int pid) {
  * - the returned value is a float number (how many QUANTUM)
  */
 static float cpu_runtime(int pid) {
-  return 0;
+  return proc_set[pid2idx(pid)].cpu_time;
 }
 
 
@@ -211,13 +291,13 @@ void proc_on_arrive(int pid) {
      * TODO: collect pid's scheduling information
      * hint: remember to init/clear the pid's "schd_attr"
      */
-    memset(&(proc_set[pid2idx(curr_pid)].schd_attr), 0, sizeof(proc_set[pid2idx(curr_pid)].schd_attr));  // Set all bytes of schd_attr to zer
-    printf("arrive_time: %llu\n", proc_set[pid2idx(curr_pid)].arrive_time);
-    printf("schded_time: %d\n", proc_set[pid2idx(curr_pid)].schded_count);
-    printf("cpu_time: %llu\n", proc_set[pid2idx(curr_pid)].cpu_time);
+    memset(&(proc_set[pid2idx(pid)].schd_attr), 0, sizeof(proc_set[pid2idx(pid)].schd_attr));  // Set all bytes of schd_attr to zer
+    // printf("init arrive_time: %f\n", proc_set[pid2idx(pid)].arrive_time);
+    // printf("init schded_time: %d\n", proc_set[pid2idx(pid)].schded_count);
+    // printf("init cpu_time: %f\n", proc_set[pid2idx(pid)].cpu_time);
 
-    proc_set[pid2idx(curr_pid)].arrive_time = earth->gettime();
-
+    proc_set[pid2idx(pid)].arrive_time = earth->gettime();
+    proc_set[pid2idx(pid)].arrive_ofcount = earth->overflow_count;
 
 
 #ifdef MLFQ
@@ -235,7 +315,7 @@ void proc_on_arrive(int pid) {
    * TODO: add the process to MLFQ
    * Note that pid is not the curr_pid
    */
-
+  // enqueue(hq, (void*)pid); 
 
 
 
@@ -250,10 +330,13 @@ void proc_on_stop(int pid) {
     /* [lab3-ex1]
      * TODO: collect pid's scheduling information */
 
+    unsigned long long current_time = earth->gettime();
+    unsigned long long cur_ofcount = earth->overflow_count;
+    proc_set[pid2idx(pid)].turnaround_time = time_gap(current_time, proc_set[pid2idx(pid)].arrive_time, cur_ofcount, proc_set[pid2idx(pid)].arrive_ofcount);
 
 
 
-    INFO("proc %d died after %d yields, turnaround time: %.2f, response time: %.4f, cputime: %.2f",
+    INFO("proc %d died after %d yields, turnaround time: %.4f, response time: %.4f, cputime: %.4f",
             pid, yield_num(pid),
             tar_time(pid), resp_time(pid),
             cpu_runtime(pid));
@@ -261,8 +344,13 @@ void proc_on_stop(int pid) {
 #ifdef MLFQ
     /* [lab3-ex2]
      * TODO: remove process from queues */
-
-
+    
+    //if(try_rm_item(hq, (void*)pid)) return;
+    /*
+    if(try_rm_item(mq, (void*)pid)) return;
+    if(try_rm_item(lq, (void*)pid)) return;
+    INFO("not find %d\n", pid);
+*/
 
 
 #endif

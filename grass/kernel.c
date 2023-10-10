@@ -58,6 +58,7 @@ void check_nested_trap() {
 
 static unsigned int trap_cause;
 void trap_handler(unsigned int mcause) {
+    // printf("trap handler\n");
     check_nested_trap();
 
     // save mcause for later use

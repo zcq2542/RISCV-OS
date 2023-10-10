@@ -1,4 +1,5 @@
 #pragma once
+extern unsigned long long overflow_count;
 
 struct earth {
     /* CPU interface */
@@ -7,6 +8,7 @@ struct earth {
 
     void (*timer_reset)();
     unsigned long long (*gettime)();
+    unsigned long long overflow_count;
 
     void* (*mmu_alloc)();
     int   (*mmu_free)(int pid);

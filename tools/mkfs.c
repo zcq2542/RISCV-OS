@@ -82,6 +82,7 @@ int main() {
     for (int i = 0; i < NKERNEL_PROC; i++) {
         struct stat st;
         stat(kernel_processes[i], &st);
+        fprintf(stderr, "[INFO] st.st_size: %ld, exec_size: %d\n", st.st_size, exec_size);
         assert((st.st_size > 0) && (st.st_size <= exec_size));
         fprintf(stderr, "[INFO] Loading %s: %ld bytes\n", kernel_processes[i], (long)st.st_size);
 

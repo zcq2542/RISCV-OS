@@ -35,7 +35,17 @@ static void mtimecmp_set(m_uint64 time) {
 }
 
 void timer_reset() {
-    mtimecmp_set(mtime_get() + QUANTUM);
+    static m_uint64 last_time = 0;
+    m_uint64 time = (m_uint64) mtime_get();
+    mtimecmp_set(time + QUANTUM);
+    if (time < last_time) {
+        INFO("time() overflows");
+        ++earth->overflow_count;
+        last_time = time;
+    }
+    // ++earth->overflow_count;
+    // printf("ov_count: %llx\n", earth->overflow_count);
+
 }
 
 m_uint64 gettime() {
@@ -51,5 +61,6 @@ m_uint64 gettime() {
 void timer_init() {
     earth->timer_reset = timer_reset;
     earth->gettime = gettime;
+    earth->overflow_count = 0;
 }
 

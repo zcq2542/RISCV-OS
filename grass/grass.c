@@ -43,11 +43,9 @@ int main() {
     /* Load and enter the first kernel process sys_proc */
     INFO("Load kernel process #%d: sys_proc", GPID_PROCESS);
     elf_load(GPID_PROCESS, sys_proc_read, 0, 0);
-
     /* run the first process sys_proc*/
     earth->mmu_switch(GPID_PROCESS);
     proc_set_running(proc_alloc());
-
     /* jump to entry of the first process */
     void (*sys_proc_entry)() = (void*)APPS_ENTRY;
     asm("mv a0, %0" ::"r"(APPS_ARG));
