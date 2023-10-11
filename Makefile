@@ -18,8 +18,8 @@ APP_HEADERS = apps/app.lds apps/*.h $(LIB_HEADERS)
 USRAPP_HEADERS = $(wildcard apps/user/*.h)
 
 
-CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections 
-# CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections -fno-common -ggdb -g
+# CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections 
+CFLAGS = -march=rv32i -mabi=ilp32 -mcmodel=medlow -ffunction-sections -fdata-sections -fno-common -ggdb -g
 LDFLAGS = -Wl,--gc-sections -nostartfiles -nostdlib
 INCLUDE = -Ilibrary -Ilibrary/elf -Ilibrary/libc -Ilibrary/file -Ilibrary/servers
 QEMU_FLAGS = -bios none -readconfig $(QEMU)/sifive-e31.cfg -kernel $(QEMU)/qemu.elf -nographic

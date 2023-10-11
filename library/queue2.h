@@ -94,10 +94,11 @@ int try_rm_item(queue_t *q, void *target) {
         return 0;
     }
 
-    if(q->head == q->tail && q->head->item == target){ // q size == 1
-        free(q->head);
-        q->head = NULL;
-        q->tail = NULL;
+    if(q->head->item == target){ // head -> item is target
+        node_t* temp = q->head;
+        q->head = temp->next;
+        free(temp);
+        if(q->head == NULL) q->tail == NULL;
         return 1;
     }
 
@@ -119,6 +120,7 @@ int try_rm_item(queue_t *q, void *target) {
 // the target must be in the queue; otherwise, there is an error
 void rm_item(queue_t *q, void *target) {
     /* TODO: your code here */
+    /*
     if(q->head == q->tail && q->head->item == target){ // q size == 1
         free(q->head);
         q->head = NULL;
@@ -143,6 +145,9 @@ void rm_item(queue_t *q, void *target) {
         }
         flag = flag->next;
     }
+    */
+    int res = try_rm_item(q, target);
+    if(res == 0) printf("item not exist.\n");
 }
 
 // print the queue with whatever information you think is useful
