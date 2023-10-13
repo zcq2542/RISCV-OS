@@ -2,6 +2,9 @@
 SYSCALLFUNC=ECALL
 
 # [lab3-ex2]: TODO: change "NAIVE" to "MLFQ"
+SCHEDULER=NAIVE
+
+# [lab3-ex2]: TODO: change "NAIVE" to "MLFQ"
 SCHEDULER=MLFQ
 RISCV_QEMU = ../riscv-qemu-5.2.0-2020.12.0-preview1-x86_64-linux-ubuntu14/bin/qemu-system-riscv32
 

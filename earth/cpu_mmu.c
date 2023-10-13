@@ -100,6 +100,7 @@ int soft_tlb_switch(int pid) {
 void pmp_init() {
     /* [lab4-ex4]
      * TODO: set PMP memory protection */
+<<<<<<< HEAD
     unsigned int pmpcfg = 0;
     unsigned int pmpaddr = 0;
     /* Setup PMP TOR region 0x00000000 - 0x20000000 as r/w/x */
