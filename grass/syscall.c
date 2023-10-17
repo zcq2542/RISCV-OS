@@ -40,11 +40,6 @@ sys_send/recv (syscall.c)
 #include "process.h"
 #include <string.h>
 
-/* FIXME: move this to egos.h */
-#define pid2idx(pid)  ((pid>=1 && pid<=MAX_NPROCESS) ? (pid-1) \
-                            : FATAL("pid2idx: invalid pid"))
-#define idx2pid(idx)  ((idx>=0 && idx<MAX_NPROCESS) ? (idx+1) \
-                            : FATAL("idx2pid: invalid idx"))
 
 
 /* Syscall first half running in user-space */
@@ -59,7 +54,7 @@ static void sys_invoke() {
 #else
     /* [lab4-ex1]
      * TODO: use ecall to trap to kerenl */
-
+    asm volatile("ecall");
 #endif
 }
 

@@ -57,9 +57,29 @@ void excp_entry(int id) {
      *   -- if curr_pid is a user application, kill the process
      *   -- if curr_pid is a system proc, panic the kernel using FATAL
      */
+    proc_set[proc_curr_idx].mepc += 4; // mepc set to address after ecall.
+    if(id == 8){ // environment call from U-mode
+        proc_syscall();
+    }
+    else if(id == 9){ // environment call from S-mode
+        proc_syscall();
+    }
+    else if(id == 11){ // environment call from M-mode
+        proc_syscall();
+    }
+    else{
+        if(curr_pid < GPID_USER_START){
+            FATAL("fatal exception (pid=%d) %d", curr_pid, id);
+        }
+        else{
+            INFO("process %d killed by exception %d", curr_pid, id);
+            proc_set[proc_curr_idx].mepc = (void*) (APPS_ENTRY + 0xC);
+            return; //asm("mret");
+        }
+    }
 
-
-    FATAL("fatal exception (pid=%d) %d", curr_pid, id);
+    //printf("excep_entry: \n");
+    //FATAL("fatal exception (pid=%d) %d", curr_pid, id);
 }
 
 void check_nested_trap() {
@@ -98,9 +118,17 @@ void ctx_entry() {
      * - if the curr_pid is a system process, set the privilege level to S-Mode
      * - if the curr_pid is a user application, set the privilege level to U-Mode
      */
-
+    unsigned long mstatus;
+    asm("csrr %0, mstatus" : "=r" (mstatus));
+    if(curr_pid < GPID_USER_START){
+        mstatus |= (0x3 << 11); // |= 1100000000000
+    }
+    else {
+        mstatus &= ~(0x3 << 11); // &= 0011111111111
+    }
+    asm("csrw mstatus, %0" :: "r" (mstatus));
+    
     /* TODO: your code here */
-
 
     /* Switch back to the user application stack */
     mepc = (int)proc_set[proc_curr_idx].mepc;

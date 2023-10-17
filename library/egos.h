@@ -100,6 +100,12 @@ extern struct grass *grass;
 /* process */
 #define MAX_NPROCESS  16
 
+/* FIXME: move this to egos.h */
+#define pid2idx(pid)  ((pid>=1 && pid<=MAX_NPROCESS) ? (pid-1) \
+                            : FATAL("pid2idx: invalid pid"))
+#define idx2pid(idx)  ((idx>=0 && idx<MAX_NPROCESS) ? (idx+1) \
+                            : FATAL("idx2pid: invalid idx"))
+
 /* data types */
 typedef unsigned int m_uint32;
 typedef unsigned long long m_uint64;

@@ -55,10 +55,11 @@ static queue_t hq;
 static queue_t mq;
 static queue_t lq;
 
+/*
 int pid2idx(int pid) {
     return ((pid>=1 && pid<=MAX_NPROCESS) ? (pid-1) : FATAL("pid2idx: invalid pid"));
 }
-
+*/
 // int idx2pid(int idx)  ((idx>=0 && idx<MAX_NPROCESS) ? (idx+1) \
                             : FATAL("idx2pid: invalid idx"))
 
@@ -179,6 +180,15 @@ void proc_yield() {
          */
 
         /* TODO: your code here */
+        unsigned long mstatus;
+        asm("csrr %0, mstatus" : "=r" (mstatus));
+        if(curr_pid < USER_PID_START){
+            mstatus |= (0x3 << 11); // |= 1100000000000 set MPP to S-mode
+        }
+        else {
+            mstatus &= ~(0x3 << 11); // &= 0011111111111 set MPP to U-mode
+        }
+        asm("csrw mstatus, %0" :: "r" (mstatus));
 
         /* Prepare argc and argv */
         asm("mv a0, %0" ::"r"(APPS_ARG));
