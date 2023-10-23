@@ -6,7 +6,9 @@
 #include <string.h>
 
 void tamper_proc() {
+    printf("before: %d\n", *(int*)(FREE_MEM_END - PAGE_SIZE));
     memset((void*)(FREE_MEM_END - PAGE_SIZE), 0, PAGE_SIZE);
+    printf("after: %d\n", *(int*)(FREE_MEM_END - PAGE_SIZE));
 
     /* [Lab4-ex5]
      * TODO: uncomment the following line
@@ -19,15 +21,35 @@ void tamper_proc() {
 
 void tamper_earth() {
     /* modifying earth's code */
+    /* illegal instruction test. 
+    unsigned int pmpaddr1;
+    asm volatile("csrr %0, pmpaddr1" : "=r"(pmpaddr1));
+    printf("pmpaddr1: %x\n", pmpaddr1);
+    */
     int *tmp = (int*)0x20400000;
+    printf("*tmp: %d\n", *tmp);
+    printf("tmp: %x\n", tmp);
+
     *tmp = 0;
+    printf("*tmp: %d\n", *tmp);
+    *(int*)(0x20400000) = 0;
+    printf("*(int*)0x20400000: %d\n", *(int*)0x20400000);
+    *(int*)(0x20400000) = 8389267;
+    printf("*(int*)0x20400000: %d\n", *(int*)0x20400000);
     SUCCESS("Crash3 succeeds in modifying earth's code");
 }
 
 void tamper_disk() {
     /* modifying disk content*/
     int *tmp = (int*)0x20800000;
+    printf("*tmp: %d\n", *tmp);
+    printf("tmp: %x\n", tmp);
+
+    *tmp = 1;
+    printf("*tmp: %d\n", *tmp);
     *tmp = 0;
+    printf("*tmp: %d\n", *tmp);
+
     SUCCESS("Crash3 succeeds in modifying disk contents");
 }
 

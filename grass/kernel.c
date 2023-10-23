@@ -68,6 +68,7 @@ void excp_entry(int id) {
         proc_syscall();
     }
     else{
+        printf("else exception\n");
         if(curr_pid < GPID_USER_START){
             FATAL("fatal exception (pid=%d) %d", curr_pid, id);
         }
@@ -118,17 +119,18 @@ void ctx_entry() {
      * - if the curr_pid is a system process, set the privilege level to S-Mode
      * - if the curr_pid is a user application, set the privilege level to U-Mode
      */
+    /* TODO: your code here */
     unsigned long mstatus;
     asm("csrr %0, mstatus" : "=r" (mstatus));
     if(curr_pid < GPID_USER_START){
-        mstatus |= (0x3 << 11); // |= 1100000000000
+        mstatus &= ~(0x2 >> 11); // &= 0111111111111
+        mstatus |= (0x1 << 11); // |= 0100000000000
     }
     else {
         mstatus &= ~(0x3 << 11); // &= 0011111111111
     }
     asm("csrw mstatus, %0" :: "r" (mstatus));
     
-    /* TODO: your code here */
 
     /* Switch back to the user application stack */
     mepc = (int)proc_set[proc_curr_idx].mepc;

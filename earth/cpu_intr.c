@@ -38,6 +38,7 @@ int intr_enable() {
     asm("csrr %0, mie" : "=r"(mie_val));
     /* For now, egos-2k+ only uses timer and software interrupts */
     asm("csrw mie, %0" ::"r"(mie_val | 0x88));
+    printf("intr enabled\n");
 }
 
 void intr_init() {

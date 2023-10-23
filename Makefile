@@ -69,7 +69,7 @@ $(RELEASE)/earth.elf: $(EARTH_SRCS) $(EARTH_HEADERS)
 $(RELEASE)/grass.elf: $(GRASS_SRCS) $(GRASS_HEADERS)
 	@mkdir -p $(DEBUG) $(RELEASE)
 	@echo "$(GREEN)-------- Compile the Grass Layer --------$(END)"
-	$(RISCV_CC) -os $(COMMON) $(GRASS_SRCS) $(GRASS_LD) -o $(RELEASE)/grass.elf
+	$(RISCV_CC)  $(COMMON) $(GRASS_SRCS) $(GRASS_LD) -o $(RELEASE)/grass.elf
 	$(OBJDUMP) $(OBJDUMP_FLAGS) $(RELEASE)/grass.elf > $(DEBUG)/grass.lst
 
 appprint:

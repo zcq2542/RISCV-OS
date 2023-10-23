@@ -183,7 +183,8 @@ void proc_yield() {
         unsigned long mstatus;
         asm("csrr %0, mstatus" : "=r" (mstatus));
         if(curr_pid < USER_PID_START){
-            mstatus |= (0x3 << 11); // |= 1100000000000 set MPP to S-mode
+            mstatus &= ~(0x2 >> 11); // &= 0111111111111
+            mstatus |= (0x1 << 11); // |= 0100000000000 set MPP to S-mode
         }
         else {
             mstatus &= ~(0x3 << 11); // &= 0011111111111 set MPP to U-mode
