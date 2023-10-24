@@ -104,97 +104,55 @@ void pmp_init() {
     unsigned int pmpaddr = 0;
     /* Setup PMP TOR region 0x00000000 - 0x20000000 as r/w/x */
    
-    // Construct the configuration value. This is an example; actual encoding might differ.
-    /*
-    unsigned int end_address = 0x20000000;  // Shifting not necessary for 0x20000000; illustrative only
-    //write_csr(pmpaddr0, end_address);  // Writing the end address to pmpaddr register (e.g., pmpaddr0)
-    asm("csrw pmpaddr0, %0" :: "r"(end_address));
-    
-    const unsigned int PMP_READ  = 0b00000001;
-    const unsigned int PMP_WRITE = 0b00000010;
-    const unsigned int PMP_EXEC  = 0b00000100;
-    const unsigned int PMP_TOR   = 0b00001000;  // Example encoding for TOR    
-    const unsigned int PMP_NAPOT = 0b00011000;
-    unsigned int cfg_value = PMP_READ | PMP_WRITE | PMP_EXEC | PMP_TOR;  // R/W/X permissions, TOR addressing
-
-    */
-    // You may need to shift cfg_value to match the correct entry
-    // If configuring the first entry in pmpcfg0, no shift is necessary
-
-    //write_csr(pmpcfg0, cfg_value);  // Writing the configuration for the corresponding pmpaddr
-
-    
- 
+ /*
     asm volatile ("csrr %0, pmpcfg0" : "=r"(pmpcfg));
     printf("init pmpconfig: %x\n", pmpcfg);
     asm volatile ("csrr %0, pmpaddr0" : "=r"(pmpaddr));
     printf("init pmpaddr0: %x\n", pmpaddr);
-
-    //pmpcfg |= (1 << 7)|(1 << 3)|(1 << 2)|(1 << 1)|(1 << 0);
+*/
     
     pmpcfg |= (1 << 3)|(1 << 2)|(1 << 1)|(1 << 0);
     pmpaddr = 0x20000000 >> 2;
-    printf("pmpconfig: %x\n", pmpcfg);
-    //asm volatile ("csrw pmpcfg0, %0" :: "r"(pmpcfg));
+    // printf("pmpconfig: %x\n", pmpcfg);
+    // asm volatile ("csrw pmpcfg0, %0" :: "r"(pmpcfg));
     asm volatile ("csrw pmpaddr0, %0" :: "r"(pmpaddr));
-    printf("pmpaddr0: %x\n", pmpaddr);
+    // printf("pmpaddr0: %x\n", pmpaddr);
     
     /* Setup PMP NAPOT region 0x20400000 - 0x20800000 as r/-/x */
-    /*
-    cfg_value |= (PMP_READ | PMP_EXEC | PMP_NAPOT) << 8;
-    printf("cfg_value: %x\n", cfg_value);
-    unsigned int pmpaddr1 = (0x20400000 >> 2) + (0x400000 >> 3) -1;
-    printf("pmpaddr1: %x\n", pmpaddr1);
-
-    asm("csrw pmpcfg0, %0" :: "r"(cfg_value));
-    asm("csrw pmpaddr1, %0" :: "r"(pmpaddr1));
-    */
-    //pmpcfg |= (((1 << 7)|(1 << 3)|(1 << 2)|(1 <<0)) << 16);
-    /*
-    pmpcfg |= (((0 << 2)|(0 <<0)) << 8);
-    pmpcfg |= (((0 << 3)|(0 << 2)|(0 <<0)) << 16);
-    printf("pmpconfig: %x\n", pmpcfg);
-    asm volatile("csrw pmpcfg0, %0" :: "r"(pmpcfg));
-    pmpaddr = 0x20400000 >> 2;
-    asm volatile("csrw pmpaddr1, %0" :: "r"(pmpaddr));
-    pmpaddr = 0x20800000 >> 2;
-    asm volatile("csrw pmpaddr2, %0" :: "r"(pmpaddr));
-    */
 
    
     pmpcfg |= (((3 << 3)|(1 << 2)|(1 <<0)) << 8);
     printf("pmpconfig: %x\n", pmpcfg);
-    //asm("csrw pmpcfg0, %0" :: "r"(pmpcfg));
     unsigned int size = 0x400000;
     unsigned int mask = size/2 - 1;
-    //pmpaddr = (0x20400000 + mask) >> 2; 
-    printf("%x\n", (0x20400000) >> 2);
-    printf("%x\n", (size >> 3) - 1);
+    // pmpaddr = (0x20400000 + mask) >> 2; 
+    // printf("%x\n", (0x20400000) >> 2);
+    // printf("%x\n", (size >> 3) - 1);
     pmpaddr = ((0x20400000) >> 2) + (size >> 3) - 1; 
     asm("csrw pmpaddr1, %0" :: "r"(pmpaddr));
-    printf("pmpaddr1: %x\n", pmpaddr);
+    // printf("pmpaddr1: %x\n", pmpaddr);
     
 
     /* Setup PMP NAPOT region 0x20800000 - 0x20C00000 as r/-/- */
     
     pmpcfg |= (((3 << 3)|(1 << 0)) << 16);
-    printf("pmpconfig: %x\n", pmpcfg);
-    //asm("csrw pmpcfg0, %0" :: "r"(pmpcfg));
+    // printf("pmpconfig: %x\n", pmpcfg);
+    // asm("csrw pmpcfg0, %0" :: "r"(pmpcfg));
     pmpaddr = (0x20800000 + mask) >> 2;
     asm("csrw pmpaddr2, %0" :: "r"(pmpaddr));
-    printf("pmpaddr2: %x\n", pmpaddr);
+    // printf("pmpaddr2: %x\n", pmpaddr);
 
     /* Setup PMP NAPOT region 0x80000000 - 0x80400000 as r/w/- */
    
     pmpcfg |= (((3 << 3)|(1 << 1)|(1 << 0)) << 24);
-    //asm("csrw pmpcfg0, %0" :: "r"(pmpcfg));
+    // asm("csrw pmpcfg0, %0" :: "r"(pmpcfg));
     pmpaddr = (0x80000000 + mask) >> 2;
     asm("csrw pmpaddr3, %0" :: "r"(pmpaddr));
-    printf("pmpconfig: %x\n", pmpcfg);
-    printf("pmpaddr3: %x\n", pmpaddr);
+    // printf("pmpconfig: %x\n", pmpcfg);
+    // printf("pmpaddr3: %x\n", pmpaddr);
 
     asm volatile ("csrw pmpcfg0, %0" :: "r"(pmpcfg));
-
+/*
     asm volatile ("csrr %0, pmpcfg0" : "=r"(pmpcfg));
     printf("read pmpconfig0: %x\n", pmpcfg);
     unsigned int pmpaddr0 = 0;
@@ -209,6 +167,7 @@ void pmp_init() {
 
     asm volatile ("csrr %0, pmpaddr3" : "=r"(pmpaddr0));
     printf("reaD pmpaddr3: %x\n", pmpaddr0);
+*/  
 }
 
 /* defined in cpu_vm.c */

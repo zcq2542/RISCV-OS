@@ -145,6 +145,7 @@ void proc_yield() {
             "proc_yield: invalid pid to switch");
     // if(!(curr_pid > 0 && curr_pid < pid2idx(MAX_NPROCESS))) printf("proc_yield: invalid pid to switch");
     earth->mmu_switch(curr_pid);
+    //printf("mmu_switch to pid: %d\n", curr_pid);
     earth->timer_reset();
 
     /* [lab3-ex1]

@@ -12,21 +12,26 @@ Q: After uncommenting the line in apps/user/crash3.c,
    And why?
    (Explain in fewer than 3 sentences)
 
-A: // write your answers here
+
+A: It successfully modified the memory. But cause an illegal instruction execption.
+   Because it change the memory of first sys proccess -- sys_proc in FREE_MEM_START
+   When using mmu_switch to this process the modified memory copy to the APPS_ENTRY cause the exception.
+   
 
 
 Q2: Can you prevent `crash3 proc` using PMP?
     Why and why not?
    (Explain in fewer than 3 sentences)
 
-A: // write your answers here
+A:
+  No. If we set that part of memory as read only, it will prevent loading elf file from disk to FREE_MEM. The operating system will not work.
 
 
 ---
-Collaborators (who you talked to about the lab, what you talked about):
+Collaborators (who you talked to about the lab, what you talked about): No.
 
 
-Source material that you consulted:
+Source material that you consulted: No.
 
 
-Other acknowledgments:
+Other acknowledgments: No.
