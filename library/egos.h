@@ -105,6 +105,7 @@ extern struct grass *grass;
                             : FATAL("pid2idx: invalid pid"))
 #define idx2pid(idx)  ((idx>=0 && idx<MAX_NPROCESS) ? (idx+1) \
                             : FATAL("idx2pid: invalid idx"))
+#define USER_PID_START 5  // FIXME: move to egos.h
 
 /* data types */
 typedef unsigned int m_uint32;

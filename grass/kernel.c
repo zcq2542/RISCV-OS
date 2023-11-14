@@ -78,9 +78,11 @@ void excp_entry(int id) {
             return; //asm("mret");
         }
     }
+    /*
     register m_uint32 mtval;
     asm("csrr %0, mtval" : "=r"(mtval));
     FATAL("fatal exception (pid=%d) %d, mtval=0x%x", curr_pid, id, mtval);
+    */
 }
 
 void check_nested_trap() {
@@ -93,7 +95,7 @@ void check_nested_trap() {
 
 static unsigned int trap_cause;
 void trap_handler(unsigned int mcause) {
-    //printf("trap handler: curr_pid: %d\n Interrupt: %d Exception code: %d\n" , curr_pid, mcause & (1 << 31), mcause & 0x3FF);
+    printf("trap handler: curr_pid: %d\n Interrupt: %d Exception code: %d\n" , curr_pid, mcause & (1 << 31), mcause & 0x3FF);
     check_nested_trap();
 
     // save mcause for later use
@@ -142,7 +144,6 @@ void ctx_entry() {
      * - if the curr_pid is a system process, set the privilege level to S-Mode
      * - if the curr_pid is a user application, set the privilege level to U-Mode
      */
-<<<<<<< HEAD
     /* TODO: your code here */
     unsigned long mstatus;
     asm("csrr %0, mstatus" : "=r" (mstatus));
@@ -155,11 +156,9 @@ void ctx_entry() {
     }
     asm("csrw mstatus, %0" :: "r" (mstatus));
     
-=======
 
     /* TODO: your code here */
 
->>>>>>> 15ef1ed (lab4 exercises)
 
     /* Switch back to the user application stack */
     mepc = (int)proc_set[proc_curr_idx].mepc;
