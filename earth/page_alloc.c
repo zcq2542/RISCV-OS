@@ -33,6 +33,21 @@ int bitmap_test(int i) {
     return bitmap[i/8] & (1 << (i%8));
 }
 
+void bitmap_print() {
+    int count = 0;
+    for(int i = 0; i < NPAGES; ++i){
+        printf("PAGE%d: ", i);
+        if(bitmap_test(i)){
+            count++;
+            printf("X, ");
+        }
+        else {
+            printf("_, ");
+        }
+    }
+    printf("\ntotal used: %d , all %d pages\n", count, NPAGES);
+}
+
 /* memory allocator interfaces
  */
 

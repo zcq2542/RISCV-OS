@@ -156,6 +156,15 @@ void msgcpy(int src_pid, int dst_pid, void* src_addr, void* dst_addr, int size) 
     /* [lab5-ex3]
      * TODO: copy the message from src_pid to dst_pid.
      * hint: earth->mmu_translate() will be useful*/
+    //printf("src_pid: %d, dst_pid: %d, src_addr: %x, dst_addr: %x, size: %d\n", src_pid, dst_pid, src_addr, dst_addr, size);
+    //printf("curr_pid: %d\n", curr_pid);
+    
+    m_uint32* src_pa = earth->mmu_translate(src_pid, src_addr);
+    m_uint32* dst_pa = earth->mmu_translate(dst_pid, dst_addr);
+    //earth->mmu_switch(0);
+    //printf("src_pa: %x, dst_pa: %x\n", src_pa, dst_pa);
+    memcpy(dst_pa, src_pa, size);
+    //printf("here");
 
 #else
     char buf[size];

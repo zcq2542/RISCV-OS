@@ -15,7 +15,7 @@
 /* Interface to allocate/free a physical page */
 void* pmalloc(int clear_page);
 void  pfree(void *paddr);
-
+void bitmap_print();
 
 #define MAX_ROOT_PAGE_TABLES MAX_NPROCESS
 #define PA2PTE(PA) ((PA >> 12) << 10)
@@ -27,9 +27,11 @@ static m_uint32* pid_to_pagetable_base[MAX_ROOT_PAGE_TABLES];
 void fence() {
     asm("sfence.vma zero,zero");
 }
-void sysproc_identity_mapping();
-void userproc_identity_mapping();
-
+void sysproc_identity_mapping(int pid);
+void sysproc_identity_unmapping(int pid);
+void userproc_identity_mapping(int pid);
+void userproc_identity_unmapping(int pid); 
+        
 /* [lab5-ex1]:
  * this function walks the page table:
  *   it translates virtual address "va" via page table "root",
@@ -47,28 +49,59 @@ void userproc_identity_mapping();
 m_uint32* walk(m_uint32* root, void* va, int alloc) {
     /* TODO: your code here */
     m_uint32 l1Idx = (m_uint32)va >> 22;
-    m_uint32 l2Idx = (m_uint32)va >> 12 & (~(l1Idx << 10));
-    m_uint32 *l1_pte_ptr = root + l1Idx * 4;
+    //m_uint32 l2Idx = (m_uint32)va >> 12 & (~(l1Idx << 10));
+    m_uint32 l2Idx = ((m_uint32)va << 10) >> 22;
+    //m_uint32 *l1_pte_ptr = root + l1Idx * 4; // pointer calculation wrong.
+    //m_uint32 *l1_pte_ptr = root + l1Idx;
+    m_uint32 *l1_pte_ptr = &root[l1Idx];
     m_uint32 l1_pte = *(l1_pte_ptr);
     m_uint32 *l2_pagetable = NULL;
     m_uint32 *l2_pte_ptr = NULL;
     //if((l1_pte & FLAG_VALID_RWX) == FLAG_NEXT_LEVEL){ // X,R,W,V = 0001
     if(l1_pte & FLAG_NEXT_LEVEL){ // X,R,W,V = 0001
-        l2_pagetable = (m_uint32*)((l1_pte >> 10) << 12); 
+        //printf("");
+        l2_pagetable = (m_uint32*)((l1_pte >> 10) << 12);
+        
     }
     else{
         if(!alloc){
             FATAL("invalid pte");
         }
         else{
+            printf("going to maclloc l2_pagetable\n");
             l2_pagetable = (m_uint32*)pmalloc(1); // malloc a page
             *l1_pte_ptr = (((m_uint32)l2_pagetable >> 12) << 10) | FLAG_NEXT_LEVEL; //update l1_pte
+            printf("*l1_pte_ptr: %x\n", *l1_pte_ptr);
         }
     }
-    l2_pte_ptr = l2_pagetable + l2Idx * 4;
+    l2_pte_ptr = &l2_pagetable[l2Idx];
+    //printf("*l2_pte_ptr: %x\n", *l2_pte_ptr);
+    //*l2_pte_ptr = 0x1;
     return l2_pte_ptr;
 }
 
+void print_pagetable(m_uint32* root){
+    if(root == NULL){
+        printf("root is NULL\n");
+    }
+    else{
+        //printf("pagetable addr: %x\n", root);
+        for(int i = 0; i < 1024; ++i){
+            if(root[i] != 0){
+                printf("\troot[%d]: %x\n", i, root[i]);
+                m_uint32* l2_pa = (m_uint32*)((root[i] >> 10) << 12);
+                for(int j = 0; j < 1024; ++j){
+                    if(l2_pa[j] != 0){
+                        printf("\t\tl2_pa[%d]: %x.\t pa: %x\t", j, l2_pa[j], (l2_pa[j] >> 10) << 12);
+                        printf("va: %x\n", (i << 22) + (j << 12));
+                        
+                    }
+                }
+            }
+        }
+    }
+    printf("\n");
+}
 
 /* [lab5-ex1]
  * establish the mapping between the "va" to the "pa" for process "pid"
@@ -78,7 +111,7 @@ int page_table_map(int pid, void *va, void *pa) {
     ASSERT( ((m_uint32)va % PAGE_SIZE == 0) &&
             ((m_uint32)pa % PAGE_SIZE == 0), "page is not aligned");
 
-
+    //printf("pid: %d\tpa: %x\tva: %x\n", pid, pa, va);
     m_uint32 *root = pid_to_pagetable_base[pid];
 
     /* Implement va-pa mapping:
@@ -120,23 +153,25 @@ int page_table_map(int pid, void *va, void *pa) {
         root = (m_uint32*)pmalloc(1);
         pid_to_pagetable_base[pid] = root;
         if(pid < USER_PID_START){
-            sysproc_identity_mapping();
+            sysproc_identity_mapping(pid);
         }
         else{
-            userproc_identity_mapping();        
+            userproc_identity_mapping(pid);        
         }
     }
     
     m_uint32* pte_ptr =  walk(root, va, 1);
-    *(pte_ptr) = PA2PTE((m_uint32)pa) | FLAG_VALID_RWX;
+    *(pte_ptr) = (((m_uint32)pa >> 12) << 10) | FLAG_VALID_RWX;
+    //printf("*pte_ptr: %x\n", *pte_ptr);
     if(pid < USER_PID_START){
         //*(pte_ptr) |= 0x10; // S
     }
     else{
-        *(pte_ptr) |= 0x10; // U
+        *(pte_ptr) |= 0x1F; // U
     }
-    
-
+//    print_pagetable(root); 
+    //m_uint32* test_pte_ptr = walk(root, va, 0);
+    //printf("*test_pte_ptr: %x\n", *test_pte_ptr);
     /* wait flushing TLB entries */
    fence();
 }
@@ -156,12 +191,12 @@ int page_table_switch(int pid) {
     //FATAL("page_table_switch is not implemented.");
     m_uint32* root = pid_to_pagetable_base[pid];
     
-    printf("%x\n", root);
-    m_uint32 before = 0;
-    asm volatile("csrr %0, satp" :"=r"(before));
-    printf("%x\n", before);
+    //printf("%x\n", root);
+    //m_uint32 before = 0;
+    //asm volatile("csrr %0, satp" :"=r"(before));
+    //printf("%x\n", before);
     m_uint32 now = ((m_uint32)root >> 12) | (1 << 31);
-    printf("%x\n", now);
+    //printf("%x\n", now);
     asm volatile("csrw satp, %0" : : "r"(now));
 
     /* wait flushing TLB entries */
@@ -177,9 +212,17 @@ int page_table_switch(int pid) {
 void *page_table_translate(int pid, void *va) {
 
     /* TODO: your code here */
-    FATAL("page_table_translate is not implemented.");
-
-    return NULL;
+    //FATAL("page_table_translate is not implemented.");
+    //printf("translate pid: %d, va: %x\n", pid, va);
+    m_uint32* pagetable = pid_to_pagetable_base[pid];
+    if(pagetable == NULL) FATAL("pid: %d, pagetable is NULL", pid);
+    m_uint32* l2_pte_ptr = walk(pagetable, va, 0);
+    //printf("l2_pte_ptr: %x\n", l2_pte_ptr);
+    //printf("*l2_pte_ptr: %x\n", *l2_pte_ptr);
+    //m_uint32 pa = PTE2PA(*l2_pte_ptr);
+    m_uint32 pa = (((*l2_pte_ptr) >> 10) << 12) + (((m_uint32)va << 20) >> 20);
+    //printf("pa: %x\n", pa);
+    return (m_uint32*)pa;
 }
 
 
@@ -204,14 +247,38 @@ int page_table_free(int pid) {
      *   allocated by your code)
      */
 
-    FATAL("page_table_free is not implemented.");
+    //FATAL("page_table_free is not implemented.");
     /* TODO: your code here */
 
-
-
-
+    //bitmap_print();
+    //printf("\tfree pagetable\n");
+    
+    if(pid < USER_PID_START){
+        sysproc_identity_unmapping(pid);
+    } 
+    else{
+        userproc_identity_unmapping(pid);
+    }
+    
+    m_uint32* root = pid_to_pagetable_base[pid];
+    for(int i = 0; i < 1024; ++i){
+        if(root[i] != 0){
+            m_uint32* l2_pa = (m_uint32*)PTE2PA(root[i]); 
+            for(int j = 0; j < 1024; ++j){
+                if(l2_pa[j] != 0){
+                    m_uint32* pa = (m_uint32*)PTE2PA(l2_pa[j]);
+                    pfree(pa); // free data page
+                    l2_pa[j] = 0; 
+                }
+            }
+            pfree(l2_pa); // free L2 page table page
+        }
+    }
+    pfree(root); // free L1 page table page (pointed by root)
+    pid_to_pagetable_base[pid] = NULL;
     /* wait flushing TLB entries */
     fence();
+    //bitmap_print();
 }
 
 
@@ -244,11 +311,26 @@ void setup_identity_region(int pid, m_uint32 addr, int npages) {
         /* [lab5-ex3]
          * TODO: for user processes, set PTE_U */
         l2_pa[vpn0 + i] = ((addr + i * PAGE_SIZE) >> 2) | FLAG_VALID_RWX;
-        /*
+        
         if(pid >= USER_PID_START){
             l2_pa[vpn0 + i] |= 0x10; 
         }
-        */
+        
+    }
+}
+
+void unmapping_identity_region(int pid, m_uint32 addr, int npages) {
+    
+    ASSERT(npages <= 1024, "npages is larger than 1024");
+    ASSERT((addr & 0xFFF) == 0, "addr is not 4K aligned");
+
+    m_uint32* root = pid_to_pagetable_base[pid];
+    ASSERT(root != NULL, "pagetable root is NULL");
+
+    /* Allocate the L2 page table page */
+    for (int i = 0; i < npages; i++) {
+        m_uint32* l2_pte_ptr = walk(root, (m_uint32*)(addr + i * PAGE_SIZE), 0);
+        *l2_pte_ptr = 0;
     }
 }
 
@@ -271,7 +353,7 @@ void kernel_identity_mapping() {
     fence();
 }
 
-void sysproc_identity_mapping() {
+void sysproc_identity_mapping(int pid) {
     /* Allocate sysproc's page table.
      * It maps sysproc's VA to the identical PA. 
                  | start address | #pages| explanation
@@ -284,17 +366,40 @@ void sysproc_identity_mapping() {
      *           |  0x80000000   | 1024  | DTIM memory
      */
     /* Allocate the leaf page tables */
-    setup_identity_region(0, 0x02000000, 16);   /* CLINT */
-    setup_identity_region(0, 0x10013000, 1);    /* UART0 */
-    setup_identity_region(0, 0x20400000, 256); /* boot ROM */
-    setup_identity_region(0, 0x20800000, 1024); /* disk image */
-    setup_identity_region(0, 0x80000000, 1024); /* DTIM memory */
+    setup_identity_region(pid, 0x02000000, 16);   /* CLINT */
+    setup_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    setup_identity_region(pid, 0x20400000, 256); /* boot ROM */
+    setup_identity_region(pid, 0x20800000, 1024); /* disk image */
+    setup_identity_region(pid, 0x80000000, 1024); /* DTIM memory */
 
-    setup_identity_region(0, 0x08000000, 512);
+    setup_identity_region(pid, 0x08000000, 512);
     fence();
 }
 
-void userproc_identity_mapping() {
+void sysproc_identity_unmapping(int pid) {
+    /* Allocate sysproc's page table.
+     * It maps sysproc's VA to the identical PA. 
+                 | start address | #pages| explanation
+     *           +---------------+-------+------------------
+     *           |  0x02000000   | 16    | CLINT
+     *           |  0x08000000   | 512   | earth data, grass code+data
+     *           |  0x10013000   | 1     | UART0
+     *           |  0x20400000   | 256   | earth code
+     *           |  0x20800000   | 1024  | disk data
+     *           |  0x80000000   | 1024  | DTIM memory
+     */
+    /* Allocate the leaf page tables */
+    unmapping_identity_region(pid, 0x02000000, 16);   /* CLINT */
+    unmapping_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    unmapping_identity_region(pid, 0x20400000, 256); /* boot ROM */
+    unmapping_identity_region(pid, 0x20800000, 1024); /* disk image */
+    unmapping_identity_region(pid, 0x80000000, 1024); /* DTIM memory */
+
+    unmapping_identity_region(pid, 0x08000000, 512);
+    fence();
+}
+
+void userproc_identity_mapping(int pid) {
     /* Allocate sysproc's page table.
      * It maps sysproc's VA to the identical PA. 
      *        | start address | #pages| explanation
@@ -307,13 +412,32 @@ void userproc_identity_mapping() {
      *           |               |       | + earth interface
      */
     /* Allocate the leaf page tables */
-    setup_identity_region(0, 0x10013000, 1);    /* UART0 */
-    setup_identity_region(0, 0x20400000, 256); /* earth code */
-    setup_identity_region(0, 0x80002000, 2); /* ... interface */
-    setup_identity_region(0, 0x08000000, 512); //earth data, grass code+data
+    setup_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    setup_identity_region(pid, 0x20400000, 256); /* earth code */
+    setup_identity_region(pid, 0x80002000, 2); /* ... interface */
+    setup_identity_region(pid, 0x08000000, 512); //earth data, grass code+data
     fence();
 }
 
+void userproc_identity_unmapping(int pid) {
+    /* Allocate sysproc's page table.
+     * It maps sysproc's VA to the identical PA. 
+     *        | start address | #pages| explanation
+     *           +---------------+-------+------------------
+     *           |  0x08000000   | 512   | earth data, grass code+data
+     *           |  0x10013000   | 1     | UART0
+     *           |  0x20400000   | 256   | earth code
+     *           |  0x80002000   | 2     | grass interface
+     *           |               |       | + earth/grass stack
+     *           |               |       | + earth interface
+     */
+    /* Allocate the leaf page tables */
+    unmapping_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    unmapping_identity_region(pid, 0x20400000, 256); /* earth code */
+    unmapping_identity_region(pid, 0x80002000, 2); /* ... interface */
+    unmapping_identity_region(pid, 0x08000000, 512); //earth data, grass code+data
+    fence();
+}
 
 int vm_init() {
     /* Setup identity mapping for kernel */
