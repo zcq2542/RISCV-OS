@@ -6,11 +6,15 @@ IFVM=VMON
 
 # [lab3-ex2]: TODO: change "NAIVE" to "MLFQ"
 SCHEDULER=MLFQ
-#RISCV_QEMU = ../riscv-qemu-5.2.0-2020.12.0-preview1-x86_64-linux-ubuntu14/bin/qemu-system-riscv32
 
-#RISCV_CC = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-gcc
-#OBJDUMP = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objdump
-#OBJCOPY = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objcopy
+RISCV_QEMU = ../riscv-qemu-5.2.0-2020.12.0-preview1-x86_64-linux-ubuntu14/bin/qemu-system-riscv32
+
+RISCV_CC = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-gcc
+OBJDUMP = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objdump
+OBJCOPY = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objcopy
+
+# [lab6]: TODO: change  "SDOFF" to "SDON"
+IFSD=SDOFF
 
 RISCV_QEMU = qemu-system-riscv32
 RISCV_CC = riscv64-unknown-elf-gcc
@@ -18,8 +22,8 @@ OBJDUMP = riscv64-unknown-elf-objdump
 OBJCOPY = riscv64-unknown-elf-objcopy
 
 LIB_HEADERS = Makefile library/*.h library/*/*.h
-EARTH_SRCS = earth/earth.S earth/*.c library/elf/*.c library/libc/*.c
-EARTH_HEADERS = earth/earth.lds $(LIB_HEADERS)
+EARTH_SRCS = earth/earth.S earth/*.c earth/sd/*.c library/elf/*.c library/libc/*.c
+EARTH_HEADERS = earth/earth.lds earth/sd/*.h $(LIB_HEADERS)
 GRASS_SRCS = grass/grass.S grass/context.S grass/*.c library/elf/*.c library/libc/*.c
 GRASS_HEADERS = grass/grass.lds grass/*.h $(LIB_HEADERS)
 APPS_SRCS = apps/app.S library/*/*.c grass/context.S
@@ -34,7 +38,7 @@ INCLUDE = -Ilibrary -Ilibrary/elf -Ilibrary/libc -Ilibrary/file -Ilibrary/server
 QEMU_FLAGS = -bios none -readconfig $(QEMU)/sifive-e31.cfg -kernel $(QEMU)/qemu.elf -nographic
 VERBOSE_LINKER = -Xlinker --verbose
 
-COMMON = $(CFLAGS) $(LDFLAGS) $(INCLUDE) -D CPU_CLOCK_RATE=65000000 -D$(SCHEDULER) -D$(SYSCALLFUNC) -D$(IFVM)
+COMMON = $(CFLAGS) $(LDFLAGS) $(INCLUDE) -D CPU_CLOCK_RATE=65000000 -D$(SCHEDULER) -D$(SYSCALLFUNC) -D$(IFVM) -D$(IFSD)
 
 APPS_LD = -Tapps/app.lds -lc -lgcc
 GRASS_LD = -Tgrass/grass.lds -lc -lgcc
