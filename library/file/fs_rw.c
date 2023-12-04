@@ -30,7 +30,8 @@ fs_t fs;
 void fs_init(m_uint32 super_blk_id) {
     // TODO: your code here
     FATAL("fs_init is not implemented");
-
+    void* dst;
+    block_read(super_blk_id, dst);
 
 
 

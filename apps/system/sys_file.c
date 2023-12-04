@@ -23,7 +23,9 @@ int main() {
 
     /* Initialize the file system interface */
     inode_intf fs = treedisk_init(fs_disk_init(), 0);
+    SUCCESS("treedisk_init");
     fs_init(SUPER_BLOCK_ID);
+    SUCCESS("fs_init");
 
     /* Send a notification to GPID_PROCESS */
     char buf[SYSCALL_MSG_LEN];

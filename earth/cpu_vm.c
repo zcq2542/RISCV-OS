@@ -372,6 +372,7 @@ void sysproc_identity_mapping(int pid) {
     /* Allocate the leaf page tables */
     setup_identity_region(pid, 0x02000000, 16);   /* CLINT */
     setup_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    setup_identity_region(pid, 0x10024000, 1);    /* SD card */
     setup_identity_region(pid, 0x20400000, 256); /* boot ROM */
     setup_identity_region(pid, 0x20800000, 1024); /* disk image */
     setup_identity_region(pid, 0x80000000, 1024); /* DTIM memory */
@@ -395,6 +396,7 @@ void sysproc_identity_unmapping(int pid) {
     /* Allocate the leaf page tables */
     unmapping_identity_region(pid, 0x02000000, 16);   /* CLINT */
     unmapping_identity_region(pid, 0x10013000, 1);    /* UART0 */
+    unmapping_identity_region(pid, 0x10024000, 1);    /* SD card */
     unmapping_identity_region(pid, 0x20400000, 256); /* boot ROM */
     unmapping_identity_region(pid, 0x20800000, 1024); /* disk image */
     unmapping_identity_region(pid, 0x80000000, 1024); /* DTIM memory */
