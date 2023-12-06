@@ -42,6 +42,7 @@ int main() {
 
         switch (req->type) {
         case FILE_READ:
+            //printf("FILE_READ req->ino: %d\n", req->ino);
             if (req->ino < FS_ROOT_INODE) {
                 r = fs->read(fs, req->ino, req->offset, (void*)&reply->block); // always read a block
                 reply->status = r == 0 ? FILE_OK : FILE_ERROR;

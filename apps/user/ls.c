@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
 
     /* Read the directory content */
     char buf[BLOCK_SIZE];
+    //printf("grass->workdir_ino: %d\n", grass->workdir_ino);
     file_read(grass->workdir_ino, 0, BLOCK_SIZE, buf);
 
     if (grass->workdir_ino < FS_ROOT_INODE) {

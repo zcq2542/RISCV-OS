@@ -28,7 +28,9 @@ void test_read() {
 
 int check_hex(char *buf, int shift) {
     char hex[] = "0123456789abcdef,";
+    //printf("buf: %s\n", buf);
     buf += 17 - (shift % 17);
+    //printf("buf_shift: %s\n", buf);
     for (int i= 0; i < BLOCK_SIZE/17 -1; i++) {
         if (strncmp(buf, hex, 17) != 0) {
             printf("[%d] buf=%s\n", i, buf);
@@ -99,6 +101,7 @@ void test_write() {
     file_write(file1, 6, strlen(buf), buf);
     file_read(file1, 0, 12, buf3);
     int fsz = file_size(file1);
+    //printf("fstest: fsz: %d\n", fsz);
     if (strncmp(buf3, "cs6640cs6640", 12) == 0 && fsz == 12) {
         SUCCESS("PASS test8");
     } else {
