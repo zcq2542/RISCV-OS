@@ -112,13 +112,19 @@ void manage_userstack(int save) {
     // a better approach is to use the original process's stack
     // but now, they are somewhere unknown. To do so, we need to walk the page table
     static struct {char data[PAGE_SIZE];} proc_stack[MAX_NPROCESS];
+    //void* origin_ps_top = earth->mmu_translate(curr_pid, (void*)(APPS_ENTRY)); // va -> pa
 
+    //void* origin_ps_top = earth->mmu_translate(curr_pid, (void*)(FREE_MEM_END)); // va -> pa
     int stack_size = APPS_STACK_TOP - (m_uint32)proc_set[proc_curr_idx].sp;
+    //printf("manage_userstack,save: %d, curr_pid: %d, sp: %x, stack_size: %d\n", save, curr_pid, proc_set[proc_curr_idx].sp, stack_size);
+    //void* origin_sp = origin_ps_top - stack_size;
     ASSERTX(stack_size <= PAGE_SIZE);
     if (save) {  // save the current stack to tmp stack arr
         memcpy(&proc_stack[curr_pid], proc_set[proc_curr_idx].sp, stack_size);
+        //memcpy(origin_sp, proc_set[proc_curr_idx].sp, stack_size);
     } else {  // restore pid's stack from the tmp stack arr
         memcpy(proc_set[proc_curr_idx].sp, &proc_stack[curr_pid], stack_size);
+        //memcpy(proc_set[proc_curr_idx].sp, origin_sp, stack_size);
     }
 }
 

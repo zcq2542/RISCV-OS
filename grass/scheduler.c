@@ -270,14 +270,14 @@ int aval_pid(queue_t* q){
 static int mlfq() {
     /* TODO: your code here */
     // printf("mlfq()\n");
-    /*
-    printf("hq: ");
-    dump_queue(&hq);
-    printf("mq: ");
-    dump_queue(&mq);
-    printf("lq: ");
-    dump_queue(&lq);
-    */
+    
+    //printf("hq: ");
+    //dump_queue(&hq);
+    //printf("mq: ");
+    //dump_queue(&mq);
+    //printf("lq: ");
+    //dump_queue(&lq);
+    
     //try_rm_item(&hq, (void*)curr_pid);
     //try_rm_item(&mq, (void*)curr_pid);
     //try_rm_item(&lq, (void*)curr_pid);

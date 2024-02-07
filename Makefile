@@ -2,7 +2,7 @@
 SYSCALLFUNC=ECALL
 
 # [lab5]: TODO: change  "VMOFF" to "VMON"
-IFVM=VMON
+IFVM=VMOFF
 
 # [lab3-ex2]: TODO: change "NAIVE" to "MLFQ"
 SCHEDULER=MLFQ
@@ -14,7 +14,7 @@ OBJDUMP = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/r
 OBJCOPY = ../riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14/bin/riscv64-unknown-elf-objcopy
 
 # [lab6]: TODO: change  "SDOFF" to "SDON"
-IFSD=SDON
+IFSD=SDOFF
 
 #RISCV_QEMU = qemu-system-riscv32
 #RISCV_CC = riscv64-unknown-elf-gcc
